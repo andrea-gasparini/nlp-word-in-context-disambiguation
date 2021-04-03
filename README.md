@@ -69,7 +69,7 @@ conda activate nlp2021-hw1
 bash test.sh data/dev.jsonl
 ```
 
-Actually, you can replace *data/dev.tsv* to point to a different file, as far as the target file has the same format.
+Actually, you can replace *data/dev.jsonl* to point to a different file, as far as the target file has the same format.
 
 If you hadn't changed *hw1/stud/model.py* yet when you run test.sh, the scores you just saw describe how a random baseline
 behaves. To have *test.sh* evaluate your model, follow the instructions in the slide.
