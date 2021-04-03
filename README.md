@@ -8,7 +8,6 @@ This is the first homework of the NLP 2021 course at Sapienza University of Rome
 #### Teaching Assistants
 * **Cesare Campagnano**
 * **Pere-Lluís Huguet Cabot**
-* **Rocco Tripodi**
 
 #### Course Info
 * http://naviglinlp.blogspot.com/
@@ -67,7 +66,7 @@ pip install -r requirements.txt
 
 ```
 conda activate nlp2021-hw1
-bash test.sh data/dev.tsv
+bash test.sh data/dev.jsonl
 ```
 
 Actually, you can replace *data/dev.tsv* to point to a different file, as far as the target file has the same format.
