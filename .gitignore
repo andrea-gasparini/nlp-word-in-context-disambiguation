@@ -143,6 +143,8 @@ media
 static
 
 # custom stuff
+logs/
+.DS_STORE
 .idea
 *.iml
 data-secret
