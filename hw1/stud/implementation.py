@@ -1,38 +1,35 @@
-import numpy as np
-from typing import List, Tuple, Dict
+import stud.utils as utils
 
+from typing import List, Dict
 from model import Model
+from stud.dataset import WiCDisambiguationDataset
+from stud.classifier import WiCDisambiguationClassifier
+from stud.word_embeddings import *
 
 
 def build_model(device: str) -> Model:
-    # STUDENT: return StudentModel()
-    # STUDENT: your model MUST be loaded on the device "device" indicates
-    return RandomBaseline()
+    embedding_size = 200
+    word_embeddings = GloVe(embedding_size=embedding_size)
 
-
-class RandomBaseline(Model):
-
-    options = [
-        ('True', 40000),
-        ('False', 40000),
-    ]
-
-    def __init__(self):
-
-        self._options = [option[0] for option in self.options]
-        self._weights = np.array([option[1] for option in self.options])
-        self._weights = self._weights / self._weights.sum()
-
-    def predict(self, sentence_pairs: List[Dict]) -> List[Dict]:
-        return [str(np.random.choice(self._options, 1, p=self._weights)[0]) for x in sentence_pairs]
+    return StudentModel(device, word_embeddings)
 
 
 class StudentModel(Model):
-    
-    # STUDENT: construct here your model
-    # this class should be loading your weights and vocabulary
+
+    def __init__(self, device: str, word_embeddings: WordEmbeddings, weights_path: str = 'model/weights.pt'):
+        self.word_embeddings = word_embeddings
+        self.model = WiCDisambiguationClassifier(word_embeddings.embedding_size, 100)
+        self.model.load_weights(weights_path, device)
 
     def predict(self, sentence_pairs: List[Dict]) -> List[Dict]:
-        # STUDENT: implement here your predict function
-        # remember to respect the same order of sentences!
-        pass
+        dataset = WiCDisambiguationDataset(sentence_pairs, self.word_embeddings, utils.sample2vector)
+
+        result = self.model(torch.stack(dataset.encoded_samples))
+
+        predictions = list()
+
+        for i in range(len(sentence_pairs)):
+            prediction = result['pred'][i].item()
+            predictions.append('True' if prediction > 0.5 else 'False')
+
+        return predictions
