@@ -1,20 +1,30 @@
 import torch
+import re
 
 from typing import Optional, Dict
 from stud.word_embeddings import WordEmbeddings
 
 
 def sample2vector(word_embeddings: WordEmbeddings, sample: Dict) -> Optional[torch.Tensor]:
-    sentence_word_vector1 = [word_embeddings[w] for w in sample['sentence1'].split(' ') if w in word_embeddings]
-    sentence_word_vector2 = [word_embeddings[w] for w in sample['sentence2'].split(' ') if w in word_embeddings]
-    sentence_word_vector = sentence_word_vector1 + sentence_word_vector2
+    sentence1 = remove_special_characters(sample['sentence1']).lower()
+    sentence2 = remove_special_characters(sample['sentence2']).lower()
+    sentences_concat = sentence1 + " | " + sentence2
 
-    if len(sentence_word_vector) == 0:
+    sentences_word_vector = [word_embeddings[word] for word in sentences_concat.split(' ') if word in word_embeddings]
+
+    if len(sentences_word_vector) == 0:
         return None
 
-    sentence_word_vector = torch.stack(sentence_word_vector)
+    sentences_word_vector = torch.stack(sentences_word_vector)
 
-    return torch.mean(sentence_word_vector, dim=0)
+    return torch.mean(sentences_word_vector, dim=0)
+
+
+def remove_special_characters(string: str) -> str:
+    string = re.sub(r'[\-—]', ' ', string)
+    string = re.sub(r'[.,:;|!?@#$"“”()\[\]&\\<>/0-9]', '', string)
+
+    return string
 
 
 def str_to_bool(s: str) -> bool:
