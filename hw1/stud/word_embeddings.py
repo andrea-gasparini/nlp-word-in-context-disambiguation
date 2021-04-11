@@ -1,16 +1,19 @@
 import os
+from collections import defaultdict
+
 import torch
 
 from abc import ABC as ABSTRACT_CLASS, abstractmethod
 
 
 class WordEmbeddings(ABSTRACT_CLASS):
-    word_vectors = dict()
 
     @abstractmethod
     def __init__(self, embedding_size, words_limit: int = 100_000):
         self.words_limit = words_limit
         self.embedding_size = embedding_size
+        self.UNK = torch.rand(embedding_size)
+        self.word_vectors = defaultdict(lambda: self.UNK)
 
     def __contains__(self, word: str) -> bool:
         return word in self.word_vectors

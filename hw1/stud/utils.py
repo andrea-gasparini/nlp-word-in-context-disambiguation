@@ -10,7 +10,7 @@ def sample2vector(word_embeddings: WordEmbeddings, sample: Dict) -> Optional[tor
     sentence2 = remove_special_characters(sample['sentence2']).lower()
     sentences_concat = sentence1 + " | " + sentence2
 
-    sentences_word_vector = [word_embeddings[word] for word in sentences_concat.split(' ') if word in word_embeddings]
+    sentences_word_vector = [word_embeddings[word] for word in sentences_concat.split(' ')]
 
     if len(sentences_word_vector) == 0:
         return None
