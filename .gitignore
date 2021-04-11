@@ -148,3 +148,6 @@ logs/
 .idea
 *.iml
 data-secret
+
+# word embeddings
+hw1/stud/word_embeddings/GloVe/
