@@ -23,7 +23,7 @@ class WordEmbeddings(ABSTRACT_CLASS):
 
 
 class GloVe(WordEmbeddings):
-    glove_dir = "hw1/stud/word_embeddings/GloVe/"
+    glove_dir = "model/word_embeddings/GloVe/"
     embedding_files = {
         50: "glove.6B.50d.txt",
         100: "glove.6B.100d.txt",

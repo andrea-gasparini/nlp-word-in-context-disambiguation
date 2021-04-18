@@ -150,4 +150,4 @@ logs/
 data-secret
 
 # word embeddings
-hw1/stud/word_embeddings/GloVe/
+model/word_embeddings/GloVe/
