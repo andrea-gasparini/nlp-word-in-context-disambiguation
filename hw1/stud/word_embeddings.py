@@ -7,13 +7,28 @@ from abc import ABC as ABSTRACT_CLASS, abstractmethod
 
 
 class WordEmbeddings(ABSTRACT_CLASS):
+    embeddings_dir = "model/word_embeddings/"
+    unknown_embedding_files = {
+        200: "unknown.200d.txt"
+    }
 
     @abstractmethod
     def __init__(self, embedding_size, words_limit: int = 100_000):
         self.words_limit = words_limit
         self.embedding_size = embedding_size
-        self.UNK = torch.rand(embedding_size)
+        self._init_unknown_embedding()
         self.word_vectors = defaultdict(lambda: self.UNK)
+
+    def _init_unknown_embedding(self):
+        assert self.embedding_size in self.unknown_embedding_files, f"Unsupported embedding size: {self.embedding_size}"
+
+        filename = self.unknown_embedding_files[self.embedding_size]
+        file_path = os.path.join(self.embeddings_dir, filename)
+        assert os.path.isfile(file_path), f"unknown word embedding {filename} not found in {self.embeddings_dir}"
+
+        with open(file_path) as f:
+            vector = f.readline().strip().split(' ')
+            self.UNK = torch.tensor([float(c) for c in vector])
 
     def __contains__(self, word: str) -> bool:
         return word in self.word_vectors
