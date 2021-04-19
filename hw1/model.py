@@ -2,7 +2,7 @@ from typing import List, Dict
 
 class Model:
 
-    def predict(self, sentence_pairs: List[Dict]) -> List[Dict]:
+    def predict(self, sentence_pairs: List[Dict]) -> List[str]:
         """
         A simple wrapper for your model
 

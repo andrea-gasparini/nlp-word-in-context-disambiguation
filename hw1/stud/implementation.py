@@ -21,7 +21,7 @@ class StudentModel(Model):
         self.model = WiCDisambiguationClassifier(word_embeddings.embedding_size, 100)
         self.model.load_weights(weights_path, device)
 
-    def predict(self, sentence_pairs: List[Dict]) -> List[Dict]:
+    def predict(self, sentence_pairs: List[Dict]) -> List[str]:
         dataset = WiCDisambiguationDataset(sentence_pairs, self.word_embeddings, utils.sample2vector)
 
         result = self.model(torch.stack(dataset.encoded_samples))
