@@ -1,36 +1,34 @@
 import torch
 import re
 
-from typing import Optional, List
+from typing import Optional, List, Set
 from stud.word_embeddings import WordEmbeddings
 
 
-def sample2vector(word_vectors: WordEmbeddings, sample: dict, separator: str = '|', target_weight: int = 10) -> Optional[torch.Tensor]:
+def sample2vector(word_vectors: WordEmbeddings, sample: dict, separator: str = '|', target_weight: int = 10) -> torch.Tensor:
     sentence1 = sentence2embeddings(word_vectors, sample['sentence1'], int(sample['start1']), target_weight)
     sentence2 = sentence2embeddings(word_vectors, sample['sentence2'], int(sample['start2']), target_weight)
 
     sentences_word_vector = sentence1 + [word_vectors[separator]] + sentence2
-
-    if len(sentences_word_vector) == 0:
-        return None
-
     sentences_word_vector = torch.stack(sentences_word_vector)
 
     return torch.mean(sentences_word_vector, dim=0)
 
 
-def sentence2embeddings(word_vectors: WordEmbeddings, sentence: str, target_start: int, target_weight: int) -> List[torch.Tensor]:
+def sentence2embeddings(word_vectors: WordEmbeddings, sentence: str, target_start: int, target_weight: int,
+                        stop_words: Optional[Set[str]] = None) -> List[torch.Tensor]:
     sentence = substitute_spacing_characters(sentence).lower()
     target_word_index = sentence[:target_start].count(' ')
 
     sentence_word_vector = list()
 
     for i, word in enumerate(sentence.split(' ')):
-        word = remove_special_characters(word)
-        word_vector = word_vectors[word]
-        if i == target_word_index:
-            word_vector * target_weight
-        sentence_word_vector.append(word_vector)
+        if stop_words is None or word not in stop_words:
+            word = remove_special_characters(word)
+            word_vector = word_vectors[word]
+            if i == target_word_index:
+                word_vector * target_weight
+            sentence_word_vector.append(word_vector)
 
     return sentence_word_vector
 
