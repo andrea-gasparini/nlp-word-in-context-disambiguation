@@ -1,36 +1,25 @@
 import torch
 import re
 
-from typing import Optional, List, Set
-from stud.word_embeddings import WordEmbeddings
+from typing import Optional, List, Set, Tuple
+from torch import Tensor
 
 
-def sample2vector(word_vectors: WordEmbeddings, sample: dict, separator: str = '|', target_weight: int = 10) -> torch.Tensor:
-    sentence1 = sentence2embeddings(word_vectors, sample['sentence1'], int(sample['start1']), target_weight)
-    sentence2 = sentence2embeddings(word_vectors, sample['sentence2'], int(sample['start2']), target_weight)
+def rnn_collate_fn(data_elements: List[Tuple[Tuple[Tensor, Tensor], Optional[Tensor]]]) \
+        -> Tuple[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor], Optional[Tensor]]:
+    X1 = [de[0][0] for de in data_elements]
+    X2 = [de[0][1] for de in data_elements]
 
-    sentences_word_vector = sentence1 + [word_vectors[separator]] + sentence2
-    sentences_word_vector = torch.stack(sentences_word_vector)
+    X1_lengths = torch.tensor([x.size(0) for x in X1], dtype=torch.long)
+    X2_lengths = torch.tensor([x.size(0) for x in X2], dtype=torch.long)
 
-    return torch.mean(sentences_word_vector, dim=0)
+    X = X1 + X2
+    X = torch.nn.utils.rnn.pad_sequence(X, batch_first=True, padding_value=0)
 
+    Y = [de[1] for de in data_elements if de[1] is not None]
+    Y = torch.tensor(Y) if len(Y) == len(data_elements) else None
 
-def sentence2embeddings(word_vectors: WordEmbeddings, sentence: str, target_start: int, target_weight: int,
-                        stop_words: Optional[Set[str]] = None) -> List[torch.Tensor]:
-    sentence = substitute_spacing_characters(sentence).lower()
-    target_word_index = sentence[:target_start].count(' ')
-
-    sentence_word_vector = list()
-
-    for i, word in enumerate(sentence.split(' ')):
-        if stop_words is None or word not in stop_words:
-            word = remove_special_characters(word)
-            word_vector = word_vectors[word]
-            if i == target_word_index:
-                word_vector * target_weight
-            sentence_word_vector.append(word_vector)
-
-    return sentence_word_vector
+    return (X[0:len(X1)], X[len(X1):len(X)]), (X1_lengths, X2_lengths), Y
 
 
 def substitute_spacing_characters(string: str) -> str:
