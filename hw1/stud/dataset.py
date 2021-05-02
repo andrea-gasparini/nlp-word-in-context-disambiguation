@@ -22,7 +22,7 @@ class WiCDisambiguationDataset(ABSTRACT_CLASS, Dataset):
     def from_file(self, word_embeddings: WordEmbeddings, stop_words: Optional[Set[str]] = None) -> 'WiCDisambiguationDataset':
         pass
 
-    def _encode_samples(self, samples: List[Dict]) -> Tuple[List[Union[Tensor, Tuple[Tensor, Tensor]]], List[Optional[Tensor]]]:
+    def _encode_samples(self, samples: List[Dict]) -> Tuple[List[Union[Tensor, Tuple[Dict, Dict]]], List[Optional[Tensor]]]:
         encoded_samples = list()
         encoded_labels = list()
 
@@ -38,13 +38,13 @@ class WiCDisambiguationDataset(ABSTRACT_CLASS, Dataset):
         return encoded_samples, encoded_labels
 
     @abstractmethod
-    def encode_sample(self, sample: Dict) -> Union[Tensor, Tuple[Tensor, Tensor]]:
+    def encode_sample(self, sample: Dict) -> Union[Tensor, Tuple[Dict, Dict]]:
         pass
 
     def __len__(self) -> int:
         return len(self.encoded_samples)
 
-    def __getitem__(self, idx) -> Tuple[Tensor, Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[Union[Tensor, Tuple[Dict, Dict]], Optional[Tensor]]:
         return self.encoded_samples[idx], self.encoded_labels[idx]
 
 
@@ -93,13 +93,14 @@ class LSTMWiCDisambiguationDataset(WiCDisambiguationDataset):
     def from_file(path: str, word_embeddings: WordEmbeddings, stop_words: Optional[Set[str]] = None) -> 'LSTMWiCDisambiguationDataset':
         return LSTMWiCDisambiguationDataset(utils.load_samples(path), word_embeddings, stop_words)
 
-    def encode_sample(self, sample: Dict) -> Tuple[Tensor, Tensor]:
-        sentence1_indexes = torch.tensor(self.__sentence_to_indexes(sample['sentence1']))
-        sentence2_indexes = torch.tensor(self.__sentence_to_indexes(sample['sentence2']))
+    def encode_sample(self, sample: Dict) -> Tuple[Dict, Dict]:
+        sentence1_indexes = self.__sentence_to_indexes(sample['sentence1'], int(sample['start1']))
+        sentence2_indexes = self.__sentence_to_indexes(sample['sentence2'], int(sample['start2']))
         return sentence1_indexes, sentence2_indexes
 
-    def __sentence_to_indexes(self, sentence: str) -> List[int]:
+    def __sentence_to_indexes(self, sentence: str, target_start: int) -> Dict:
         sentence = utils.substitute_spacing_characters(sentence).lower()
+        target_word_index = sentence[:target_start].count(' ')
         sentence_word_indexes = list()
 
         for i, word in enumerate(sentence.split(' ')):
@@ -108,4 +109,7 @@ class LSTMWiCDisambiguationDataset(WiCDisambiguationDataset):
                 word_indices = self.word_embeddings.word_indexes[word]
                 sentence_word_indexes.append(word_indices)
 
-        return sentence_word_indexes
+        return {
+            'sentence_word_indexes': torch.tensor(sentence_word_indexes),
+            'target_word_index': target_word_index
+        }

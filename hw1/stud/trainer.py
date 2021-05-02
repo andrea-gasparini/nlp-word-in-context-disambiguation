@@ -1,7 +1,6 @@
-from typing import Dict
-
 import torch
 
+from typing import Dict
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 
@@ -53,8 +52,8 @@ class Trainer:
 
     def __predict(self, batch) -> Dict[str, torch.Tensor]:
         if len(batch) == 3:
-            x, x_length, y = batch
-            return self.model(x, x_length, y)
+            x, x_summary_position, y = batch
+            return self.model(x, x_summary_position, y)
         elif len(batch) == 2:
             x, y = batch
             return self.model(x, y)
