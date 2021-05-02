@@ -11,20 +11,16 @@ class WordEmbeddings(ABSTRACT_CLASS):
     unknown_embedding_files = {
         200: "unknown.200d.txt"
     }
-    padding_embedding_files = {
-        200: "padding.200d.txt"
-    }
 
     @abstractmethod
     def __init__(self, embedding_size, words_limit: int = 100_000):
         self.words_limit = words_limit
         self.embedding_size = embedding_size
 
-        assert self.embedding_size in self.padding_embedding_files and \
-               self.embedding_size in self.unknown_embedding_files, f"Unsupported embedding size: {self.embedding_size}"
+        assert self.embedding_size in self.unknown_embedding_files, f"Unsupported embedding size: {self.embedding_size}"
 
-        self.PAD = self._load_single_embedding(self.padding_embedding_files[self.embedding_size])
         self.UNK = self._load_single_embedding(self.unknown_embedding_files[self.embedding_size])
+        self.PAD = torch.zeros(self.embedding_size)
 
         self._init_word_vectors()
         self._init_word_indexes()
@@ -45,7 +41,7 @@ class WordEmbeddings(ABSTRACT_CLASS):
 
     def _load_single_embedding(self, filename: str) -> torch.Tensor:
         file_path = os.path.join(self.embeddings_dir, filename)
-        assert os.path.isfile(file_path), f"unknown word embedding {filename} not found in {self.embeddings_dir}"
+        assert os.path.isfile(file_path), f"word embedding {filename} not found in {self.embeddings_dir}"
 
         with open(file_path) as f:
             vector = f.readline().strip().split(' ')
