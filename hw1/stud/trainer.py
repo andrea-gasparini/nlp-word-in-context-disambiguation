@@ -1,3 +1,5 @@
+from typing import Dict
+
 import torch
 
 from matplotlib import pyplot as plt
@@ -23,9 +25,9 @@ class Trainer:
             self.global_epoch = epoch
             self.model.train()
 
-            for x, y in train_dataloader:
+            for batch in train_dataloader:
                 self.optimizer.zero_grad()
-                result = self.model(x, y)
+                result = self.__predict(batch)
                 loss = result['loss']
                 losses.append(loss)
 
@@ -49,13 +51,21 @@ class Trainer:
             'valid_history': self.valid_history,
         }
 
+    def __predict(self, batch) -> Dict[str, torch.Tensor]:
+        if len(batch) == 3:
+            x, x_length, y = batch
+            return self.model(x, x_length, y)
+        elif len(batch) == 2:
+            x, y = batch
+            return self.model(x, y)
+
     def evaluate(self, validation_dataloader: DataLoader) -> torch.Tensor:
         losses = []
         self.model.eval()
 
         with torch.no_grad():
-            for x, y in validation_dataloader:
-                result = self.model(x, y)
+            for batch in validation_dataloader:
+                result = self.__predict(batch)
                 loss = result['loss']
                 losses.append(loss)
 

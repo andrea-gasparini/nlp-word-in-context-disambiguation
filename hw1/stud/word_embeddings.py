@@ -16,19 +16,36 @@ class WordEmbeddings(ABSTRACT_CLASS):
     def __init__(self, embedding_size, words_limit: int = 100_000):
         self.words_limit = words_limit
         self.embedding_size = embedding_size
-        self._init_unknown_embedding()
-        self.word_vectors = defaultdict(lambda: self.UNK)
 
-    def _init_unknown_embedding(self):
         assert self.embedding_size in self.unknown_embedding_files, f"Unsupported embedding size: {self.embedding_size}"
 
-        filename = self.unknown_embedding_files[self.embedding_size]
+        self.UNK = self._load_single_embedding(self.unknown_embedding_files[self.embedding_size])
+        self.PAD = torch.zeros(self.embedding_size)
+
+        self._init_word_vectors()
+        self._init_word_indexes()
+
+    @abstractmethod
+    def _init_word_vectors(self) -> None:
+        self.word_vectors = defaultdict(lambda: self.UNK)
+
+    def _init_word_indexes(self) -> None:
+        self.vectors_store = [self.PAD, self.UNK]
+        self.word_indexes = defaultdict(lambda: 1)  # index of UNK token as default value
+
+        for word, vector in self.word_vectors.items():
+            self.word_indexes[word] = len(self.vectors_store)
+            self.vectors_store.append(vector)
+
+        self.vectors_store = torch.stack(self.vectors_store)
+
+    def _load_single_embedding(self, filename: str) -> torch.Tensor:
         file_path = os.path.join(self.embeddings_dir, filename)
-        assert os.path.isfile(file_path), f"unknown word embedding {filename} not found in {self.embeddings_dir}"
+        assert os.path.isfile(file_path), f"word embedding {filename} not found in {self.embeddings_dir}"
 
         with open(file_path) as f:
             vector = f.readline().strip().split(' ')
-            self.UNK = torch.tensor([float(c) for c in vector])
+            return torch.tensor([float(c) for c in vector])
 
     def __contains__(self, word: str) -> bool:
         return word in self.word_vectors
@@ -48,11 +65,10 @@ class GloVe(WordEmbeddings):
 
     def __init__(self, words_limit: int = 100_000, embedding_size: int = 200):
         assert embedding_size in self.embedding_files, f"Unsupported embedding size: {embedding_size}"
-
         super().__init__(embedding_size, words_limit)
-        self._init_data()
 
-    def _init_data(self):
+    def _init_word_vectors(self) -> None:
+        super()._init_word_vectors()
         filename = self.embedding_files[self.embedding_size]
         file_path = os.path.join(self.glove_dir, filename)
         assert os.path.isfile(file_path), f"GloVe embedding {filename} not found in {self.glove_dir}"
