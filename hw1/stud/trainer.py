@@ -23,9 +23,9 @@ class Trainer:
             self.global_epoch = epoch
             self.model.train()
 
-            for x, x_length, y in train_dataloader:
+            for x, x_summary_position, y in train_dataloader:
                 self.optimizer.zero_grad()
-                result = self.model(x, x_length, y)
+                result = self.model(x, x_summary_position, y)
                 loss = result['loss']
                 losses.append(loss)
 
@@ -54,8 +54,8 @@ class Trainer:
         self.model.eval()
 
         with torch.no_grad():
-            for x, x_length, y in validation_dataloader:
-                result = self.model(x, x_length, y)
+            for x, x_summary_position, y in validation_dataloader:
+                result = self.model(x, x_summary_position, y)
                 loss = result['loss']
                 losses.append(loss)
 

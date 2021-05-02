@@ -27,13 +27,13 @@ class WiCDisambiguationDataset(Dataset):
 
         return WiCDisambiguationDataset(samples, word_embeddings, stop_words)
 
-    def encode_samples(self, samples: List[Dict]) -> Tuple[List[Tuple[Tensor, Tensor]], List[Optional[Tensor]]]:
+    def encode_samples(self, samples: List[Dict]) -> Tuple[List[Tuple[Dict, Dict]], List[Optional[Tensor]]]:
         encoded_samples = list()
         encoded_labels = list()
 
         for sample in samples:
-            sentence1_indexes = torch.tensor(self.__sentence_to_indexes(sample['sentence1']))
-            sentence2_indexes = torch.tensor(self.__sentence_to_indexes(sample['sentence2']))
+            sentence1_indexes = self.__sentence_to_indexes(sample['sentence1'], int(sample['start1']))
+            sentence2_indexes = self.__sentence_to_indexes(sample['sentence2'], int(sample['start2']))
             encoded_samples.append((sentence1_indexes, sentence2_indexes))
 
             if 'label' in sample:
@@ -44,8 +44,9 @@ class WiCDisambiguationDataset(Dataset):
 
         return encoded_samples, encoded_labels
 
-    def __sentence_to_indexes(self, sentence: str) -> List[int]:
+    def __sentence_to_indexes(self, sentence: str, target_start: int) -> Dict:
         sentence = utils.substitute_spacing_characters(sentence).lower()
+        target_word_index = sentence[:target_start].count(' ')
         sentence_word_indexes = list()
 
         for i, word in enumerate(sentence.split(' ')):
@@ -54,10 +55,13 @@ class WiCDisambiguationDataset(Dataset):
                 word_indices = self.word_embeddings.word_indexes[word]
                 sentence_word_indexes.append(word_indices)
 
-        return sentence_word_indexes
+        return {
+            'sentence_word_indexes': torch.tensor(sentence_word_indexes),
+            'target_word_index': target_word_index
+        }
 
     def __len__(self) -> int:
         return len(self.encoded_samples)
 
-    def __getitem__(self, idx) -> Tuple[Tuple[Tensor, Tensor], Optional[Tensor]]:
+    def __getitem__(self, idx) -> Tuple[Tuple[Dict, Dict], Optional[Tensor]]:
         return self.encoded_samples[idx], self.encoded_labels[idx]

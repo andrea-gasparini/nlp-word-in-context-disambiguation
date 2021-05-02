@@ -11,17 +11,19 @@ from stud.word_embeddings import *
 def build_model(device: str) -> Model:
     word_embeddings = GloVe(embedding_size=200)
     weights_path = 'model/weights.pt'
-    stop_words = utils.load_stop_words('model/stop_words/english')
+    hparams = HParams()
+    stop_words = None if hparams.lstm_bidirectional else utils.load_stop_words('model/stop_words/english')
 
-    return StudentModel(device, word_embeddings, weights_path, stop_words)
+    return StudentModel(device, hparams, word_embeddings, weights_path, stop_words)
 
 
 class StudentModel(Model):
 
-    def __init__(self, device: str, word_embeddings: WordEmbeddings, weights_path: str,
+    def __init__(self, device: str, hparams: HParams, word_embeddings: WordEmbeddings, weights_path: str,
                  stop_words: Optional[Set[str]] = None) -> None:
         self.word_embeddings = word_embeddings
-        self.model = WiCDisambiguationClassifier(HParams(), word_embeddings)
+        self.collate_fn = utils.bilstm_collate_fn if hparams.lstm_bidirectional else utils.lstm_collate_fn
+        self.model = WiCDisambiguationClassifier(hparams, word_embeddings)
         self.model.load_weights(weights_path, device)
         self.stop_words = stop_words 
 
@@ -29,8 +31,8 @@ class StudentModel(Model):
         dataset = WiCDisambiguationDataset(sentence_pairs, self.word_embeddings, self.stop_words)
         predictions = list()
 
-        for x, x_length, y in DataLoader(dataset, batch_size=32, collate_fn=utils.rnn_collate_fn):
-            predictions_batch = self.model(x, x_length, y)['pred']
+        for x, x_summary_position, y in DataLoader(dataset, batch_size=32, collate_fn=self.collate_fn):
+            predictions_batch = self.model(x, x_summary_position, y)['pred']
             predictions += ['True' if prediction > 0.5 else 'False' for prediction in predictions_batch]
 
         return predictions

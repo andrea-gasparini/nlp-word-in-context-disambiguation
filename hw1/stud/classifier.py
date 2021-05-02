@@ -45,7 +45,7 @@ class WiCDisambiguationClassifier(torch.nn.Module):
         # loss function
         self.loss_fn = torch.nn.BCELoss()
 
-    def forward(self, x: Tuple[Tensor, Tensor], x_length: Tuple[Tensor, Tensor], y: Optional[Tensor] = None) -> Dict[str, Tensor]:
+    def forward(self, x: Tuple[Tensor, Tensor], x_summary_position: Tuple[Tensor, Tensor], y: Optional[Tensor] = None) -> Dict[str, Tensor]:
 
         # embedding words from indices
         embedding_out_1 = self.__embedding_step(x[0])
@@ -55,8 +55,8 @@ class WiCDisambiguationClassifier(torch.nn.Module):
         recurrent_out_1 = self.__recurrent_step(embedding_out_1)
         recurrent_out_2 = self.__recurrent_step(embedding_out_2)
 
-        summary_vectors_1 = self.__get_summary_vectors(recurrent_out_1, x_length[0])
-        summary_vectors_2 = self.__get_summary_vectors(recurrent_out_2, x_length[1])
+        summary_vectors_1 = self.__get_summary_vectors(recurrent_out_1, x_summary_position[0])
+        summary_vectors_2 = self.__get_summary_vectors(recurrent_out_2, x_summary_position[1])
 
         summary_vectors = torch.cat((summary_vectors_1, summary_vectors_2), dim=1)
 
@@ -95,16 +95,15 @@ class WiCDisambiguationClassifier(torch.nn.Module):
 
         return recurrent_out
 
-    def __get_summary_vectors(self, recurrent_out: Tensor, x_length: Tensor):
+    def __get_summary_vectors(self, recurrent_out: Tensor, x_summary_position: Tensor):
         batch_size, seq_len, hidden_size = recurrent_out.shape
 
         # flattening the recurrent output to have a long sequence of (batch_size x seq_len) vectors
         flattened_out = recurrent_out.reshape(-1, hidden_size)
 
-        # computing a tensor of the indices of the last token in each batch element
-        last_word_relative_indices = x_length - 1
+        # computing a tensor of the indices of the token in the specified positions of each batch element
         sequences_offsets = torch.arange(batch_size) * seq_len
-        summary_vectors_indices = sequences_offsets + last_word_relative_indices
+        summary_vectors_indices = sequences_offsets + x_summary_position
 
         # summary vectors that should summarize the elements in the batch
         summary_vectors = flattened_out[summary_vectors_indices]
