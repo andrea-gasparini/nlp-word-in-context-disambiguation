@@ -7,6 +7,17 @@ from abc import ABC as ABSTRACT_CLASS, abstractmethod
 
 
 class WordEmbeddings(ABSTRACT_CLASS):
+    """
+    Abstract class that represent a vocabulary of word embeddings. It supports both <PAD> and <UNK> tokens.
+
+    The embeddings can be retrieved given an index or a word, respectively from the fields `vectors_store` and
+    `word_vectors`. Each word is associated to its embedding index in the `word_indexes` dictionary.
+
+    It also implements `__contains__` and `__getitem__` methods to directly access an embedding given a word.
+
+    The method `_init_word_vectors` must be implemented by a subclass to initialize the `word_vectors` dictionary.
+    """
+
     embeddings_dir = "model/word_embeddings/"
     unknown_embedding_files = {
         200: "unknown.200d.txt"
@@ -55,6 +66,12 @@ class WordEmbeddings(ABSTRACT_CLASS):
 
 
 class GloVe(WordEmbeddings):
+    """
+    Implementation of a word embeddings' vocabulary based on GloVe vectors.
+
+    The pre-trained embeddings can be downloaded from https://nlp.stanford.edu/data/glove.6B.zip.
+    """
+
     glove_dir = "model/word_embeddings/GloVe/"
     embedding_files = {
         50: "glove.6B.50d.txt",

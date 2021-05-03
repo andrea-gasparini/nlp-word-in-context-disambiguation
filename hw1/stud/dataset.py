@@ -9,6 +9,9 @@ from abc import ABC as ABSTRACT_CLASS, abstractmethod
 
 
 class WiCDisambiguationDataset(ABSTRACT_CLASS, Dataset):
+    """
+    Abstract class that represents a `Dataset` for the Word-in-Context Disambiguation task.
+    """
 
     def __init__(self, samples: List[Dict], word_embeddings: WordEmbeddings, stop_words: Optional[Set[str]] = None):
         self.samples = samples
@@ -19,10 +22,23 @@ class WiCDisambiguationDataset(ABSTRACT_CLASS, Dataset):
 
     @staticmethod
     @abstractmethod
-    def from_file(self, word_embeddings: WordEmbeddings, stop_words: Optional[Set[str]] = None) -> 'WiCDisambiguationDataset':
+    def from_file(path: str, word_embeddings: WordEmbeddings, stop_words: Optional[Set[str]] = None) -> 'WiCDisambiguationDataset':
+        """
+        Static method to create a dataset directly loading a `jsonl` file.
+
+        It has to be implemented by the subclass.
+        """
         pass
 
     def _encode_samples(self, samples: List[Dict]) -> Tuple[List[Union[Tensor, Tuple[Dict, Dict]]], List[Optional[Tensor]]]:
+        """
+        Loops over the dataset samples to encode them from the dictionary representation to the one that
+        the classifier is going to handle.
+
+        :param samples: the list of dictionary samples
+        :return: a tuple of x, y pairs (x can be a single `Tensor` or a tuple of `Dict`,
+                 depends on `encode_sample` function the implementation)
+        """
         encoded_samples = list()
         encoded_labels = list()
 
@@ -39,6 +55,14 @@ class WiCDisambiguationDataset(ABSTRACT_CLASS, Dataset):
 
     @abstractmethod
     def encode_sample(self, sample: Dict) -> Union[Tensor, Tuple[Dict, Dict]]:
+        """
+        Encodes a single sample from the dictionary representation to the one that the classifier is going to handle.
+
+        It can be a single `Tensor` or a tuple of `Dict`, depending on the classifier.
+
+        :param sample: a dictionary sample
+        :return: the encoded x value
+        """
         pass
 
     def __len__(self) -> int:
@@ -49,6 +73,10 @@ class WiCDisambiguationDataset(ABSTRACT_CLASS, Dataset):
 
 
 class WordLevelWiCDisambiguationDataset(WiCDisambiguationDataset):
+    """
+    `Dataset` implementation for the word level approach of the Word-in-Context Disambiguation task.
+    """
+
     target_word_weight = 10
 
     def __init__(self, samples: List[Dict], word_embeddings: WordEmbeddings, stop_words: Optional[Set[str]] = None):
@@ -59,6 +87,12 @@ class WordLevelWiCDisambiguationDataset(WiCDisambiguationDataset):
         return WordLevelWiCDisambiguationDataset(utils.load_samples(path), word_embeddings, stop_words)
 
     def encode_sample(self, sample: Dict) -> Tensor:
+        """
+        Encodes a single sample as the concatenation of the two sentences word embeddings average.
+
+        :param sample: a dictionary sample
+        :return: the encoded x value
+        """
         sentence1_vector = self._sentence_to_vector(sample['sentence1'], int(sample['start1']))
         sentence2_vector = self._sentence_to_vector(sample['sentence2'], int(sample['start2']))
 
@@ -68,6 +102,18 @@ class WordLevelWiCDisambiguationDataset(WiCDisambiguationDataset):
         return torch.cat((sentence1_mean, sentence2_mean))
 
     def _sentence_to_vector(self, sentence: str, target_start: int) -> Tensor:
+        """
+        Returns the word embeddings `Tensor` representation of a sentence, with a bigger weight on the target word.
+
+        Before the word embeddings encoding, each sentence has the following preprocessing:
+         - all the spacing characters are replaced with an actual space
+         - the stop words are removed if a set of stop words is specified in the class initialization
+         - punctuation and special characters are removed
+
+        :param sentence: sentence to encode as a word embeddings `Tensor`
+        :param target_start: index of the target word start in the sentence
+        :return: the word embeddings `Tensor` representation of the sentence
+        """
         sentence = utils.substitute_spacing_characters(sentence).lower()
         target_word_index = sentence[:target_start].count(' ')
 
@@ -85,6 +131,9 @@ class WordLevelWiCDisambiguationDataset(WiCDisambiguationDataset):
 
 
 class LSTMWiCDisambiguationDataset(WiCDisambiguationDataset):
+    """
+    `Dataset` implementation for the sequence encoding approach of the Word-in-Context Disambiguation task.
+    """
 
     def __init__(self, samples: List[Dict], word_embeddings: WordEmbeddings, stop_words: Optional[Set[str]] = None) -> None:
         super().__init__(samples, word_embeddings, stop_words)
@@ -94,11 +143,32 @@ class LSTMWiCDisambiguationDataset(WiCDisambiguationDataset):
         return LSTMWiCDisambiguationDataset(utils.load_samples(path), word_embeddings, stop_words)
 
     def encode_sample(self, sample: Dict) -> Tuple[Dict, Dict]:
+        """
+        Encodes a single sample as a tuple of dictionaries that contain a `Tensor` of the indexes of the sentence word embeddings
+        ('sentence_word_indexes' key) and the index of the target word inside this tensor ('target_word_index' key).
+
+        :param sample: a dictionary sample
+        :return: the encoded x value
+        """
         sentence1_indexes = self.__sentence_to_indexes(sample['sentence1'], int(sample['start1']))
         sentence2_indexes = self.__sentence_to_indexes(sample['sentence2'], int(sample['start2']))
         return sentence1_indexes, sentence2_indexes
 
     def __sentence_to_indexes(self, sentence: str, target_start: int) -> Dict:
+        """
+        Returns a dictionary that contain a `Tensor` of the indexes of the sentence word embeddings and the index of
+        the target word inside this tensor.
+
+        Before the word embeddings encoding, each sentence has the following preprocessing:
+         - all the spacing characters are replaced with an actual space
+         - the stop words are removed if a set of stop words is specified in the class initialization
+         - punctuation and special characters are removed
+
+        :param sentence: sentence to encode
+        :param target_start: index of the target word start in the sentence
+        :return: a dictionary with two keys, 'sentence_word_indexes' for the indexes of the sentence word embeddings
+                 and 'target_word_index' for the index of the target word inside this tensor
+        """
         sentence = utils.substitute_spacing_characters(sentence).lower()
         target_word_index = sentence[:target_start].count(' ')
         sentence_word_indexes = list()

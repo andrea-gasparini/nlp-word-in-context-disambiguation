@@ -33,6 +33,9 @@ def build_model(device: str) -> Model:
 
 
 class WordLevelModel(Model):
+    """
+    Implementation of the word-level approach
+    """
 
     def __init__(self, device: str, n_features: int, hidden_size: int, word_embeddings: WordEmbeddings,
                  weights_path: str, stop_words: Optional[Set[str]] = None):
@@ -54,6 +57,11 @@ class WordLevelModel(Model):
 
 
 class LSTMModel(Model):
+    """
+    Implementation of the sequence encoding approach.
+
+    The Bidirectional LSTM variant can be instantiated setting the hyperparameter `lstm_bidirectional` to `True`.
+    """
 
     def __init__(self, device: str, hparams: HParams, word_embeddings: WordEmbeddings, weights_path: str,
                  stop_words: Optional[Set[str]] = None) -> None:
@@ -61,7 +69,7 @@ class LSTMModel(Model):
         self.collate_fn = utils.bilstm_collate_fn if hparams.lstm_bidirectional else utils.lstm_collate_fn
         self.model = LSTMWiCDisambiguationClassifier(hparams, word_embeddings)
         self.model.load_weights(weights_path, device)
-        self.stop_words = stop_words
+        self.stop_words = None if hparams.lstm_bidirectional else stop_words
 
     def predict(self, sentence_pairs: List[Dict]) -> List[str]:
         dataset = LSTMWiCDisambiguationDataset(sentence_pairs, self.word_embeddings, self.stop_words)

@@ -6,18 +6,42 @@ from typing import Optional, List, Set, Tuple, Dict
 from torch import Tensor
 
 
-def bilstm_collate_fn(data_elements: List[Tuple[Tuple[Tensor, Tensor], Optional[Tensor]]]) \
+def bilstm_collate_fn(data_elements: List[Tuple[Tuple[Dict, Dict], Optional[Tensor]]]) \
         -> Tuple[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor], Optional[Tensor]]:
+    """
+    Collate function that pads the sentences in each batch to match the length of the longest sequence in that batch.
+
+    Returns the target word index as summary vector position (see also --> :func:`rnn_collate_fn`).
+    """
     return rnn_collate_fn(data_elements, target_word=True)
 
 
-def lstm_collate_fn(data_elements: List[Tuple[Tuple[Tensor, Tensor], Optional[Tensor]]]) \
+def lstm_collate_fn(data_elements: List[Tuple[Tuple[Dict, Dict], Optional[Tensor]]]) \
         -> Tuple[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor], Optional[Tensor]]:
+    """
+    Collate function that pads the sentences in each batch to match the length of the longest sequence in that batch.
+
+    Returns the last word index as summary vector position (see also --> :func:`rnn_collate_fn`).
+    """
     return rnn_collate_fn(data_elements, target_word=False)
 
 
-def rnn_collate_fn(data_elements: List[Tuple[Tuple[Tensor, Tensor], Optional[Tensor]]], target_word: bool = False) \
+def rnn_collate_fn(data_elements: List[Tuple[Tuple[Dict, Dict], Optional[Tensor]]], target_word: bool = False) \
         -> Tuple[Tuple[Tensor, Tensor], Tuple[Tensor, Tensor], Optional[Tensor]]:
+    """
+    Collate function that pads the sentences in each batch to match the length of the longest sequence in that batch.
+
+    It returns a triple composed by:
+     - a tuple of the two padded sentence indexes
+     - a tuple of the two summary vector indexes
+     - the gold label
+
+    :param data_elements: list of elements from the `Dataset` class specified in the `DataLoader`
+    :param target_word: whether to return the target word index as 2nd element of the triple
+                        or the index of the last token in the sentence
+    :return: a triple composed by a tuple of the two padded sentence indexes,
+             a tuple of the two summary vector indexes and the gold label
+    """
     X1 = [de[0][0]['sentence_word_indexes'] for de in data_elements]
     X2 = [de[0][1]['sentence_word_indexes'] for de in data_elements]
 

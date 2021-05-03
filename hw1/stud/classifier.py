@@ -7,24 +7,50 @@ from stud.word_embeddings import WordEmbeddings
 
 
 class WiCDisambiguationClassifier(ABSTRACT_CLASS, torch.nn.Module):
+    """
+    Abstract class that represents a Neural Network based classifier for the Word-in-Context Disambiguation task.
+    """
 
     @abstractmethod
     def __init__(self):
         super().__init__()
 
+        self.loss_fn = torch.nn.BCELoss()
+
     def save_weights(self, path: str) -> None:
+        """
+        Saves the parameters and persistent buffers of the classifier to the specified `path`.
+
+        :param path: where to save the model dump
+        """
         torch.save(self.state_dict(), path)
 
     def load_weights(self, path: str, device: str) -> None:
+        """
+        Loads parameters and persistent buffers from a previous saved classifier.
+
+        :param path: where to find the model dump
+        :param device: location where the parameters should be loaded
+        """
         self.load_state_dict(torch.load(path, map_location=device))
         self.to(device)
         self.eval()
 
     def loss(self, pred: Tensor, y: Tensor) -> Tensor:
+        """
+        Computes the loss with the Binary Cross Entropy function.
+
+        :param pred: prediction tensor
+        :param y: gold label tensor
+        :return: computed loss
+        """
         return self.loss_fn(pred, y)
 
 
 class WordLevelWiCDisambiguationClassifier(WiCDisambiguationClassifier):
+    """
+    Multi Layer Perceptron classifier implementation for the word level approach of the Word-in-Context Disambiguation task.
+    """
 
     def __init__(self, n_features: int, n_hidden: int) -> None:
         super().__init__()
@@ -32,7 +58,6 @@ class WordLevelWiCDisambiguationClassifier(WiCDisambiguationClassifier):
         self.lin1 = torch.nn.Linear(n_features, n_hidden)
         self.lin2 = torch.nn.Linear(n_hidden, 1)
         self.relu = torch.nn.ReLU()
-        self.loss_fn = torch.nn.BCELoss()
 
     def forward(self, x: Tensor, y: Optional[Tensor] = None) -> Dict[str, Tensor]:
         out = self.lin1(x)
@@ -50,6 +75,9 @@ class WordLevelWiCDisambiguationClassifier(WiCDisambiguationClassifier):
 
 
 class HParams:
+    """
+    Hyperparameters for the sequence encoding approach
+    """
     hidden_dim = 100
     lstm_bidirectional = False
     lstm_layers = 1
@@ -57,6 +85,24 @@ class HParams:
 
 
 class LSTMWiCDisambiguationClassifier(WiCDisambiguationClassifier):
+    """
+    Long Short-Term Memory based classifier implementation for the sequence encoding approach of the Word-in-Context Disambiguation task.
+
+    It is composed as follows:
+     - an Embedding layer that maps from the indexes to the actual word embeddings
+     - an LSTM layer parametrized with the `HParams` class (can be more than one with the `lstm_layers` param)
+     - two Fully Connected layers with in and out features equal to two times the output dimension of the LSTM layer
+
+    Each of the two encoded sentence is firstly fed into the embedding layer, then in the LSTM layer and finally the two
+    outputs are summarized with the hidden state computed at the position specified in the batch. For example the position
+    of the last token or the position of the target word (see also --> :func:`~utils.rnn_collate_fn`).
+
+    The number of features of the FC layers is equal to the LSTM output dimension multiplied by two, like the concatenation
+    of the summary vectors computed on the two outputs of the LSTM layer.
+
+    Dropout is also applied based on the `HParams` class, after the embedding layer, after each LSTM layer and also after
+    the first Fully Connected.
+    """
 
     def __init__(self, hparams: HParams, word_embeddings: WordEmbeddings) -> None:
         super().__init__()
@@ -85,9 +131,6 @@ class LSTMWiCDisambiguationClassifier(WiCDisambiguationClassifier):
         # regularization
         self.dropout = torch.nn.Dropout(hparams.dropout)
         self.relu = torch.nn.ReLU()
-
-        # loss function
-        self.loss_fn = torch.nn.BCELoss()
 
     def forward(self, x: Tuple[Tensor, Tensor], x_summary_position: Tuple[Tensor, Tensor], y: Optional[Tensor] = None) -> Dict[str, Tensor]:
 
@@ -119,18 +162,32 @@ class LSTMWiCDisambiguationClassifier(WiCDisambiguationClassifier):
         return result
 
     def __embedding_step(self, x: Tensor) -> Tensor:
+        """
+        Applies the embedding layer plus dropout
+        """
         embedding_out = self.embedding(x)
         embedding_out = self.dropout(embedding_out)
 
         return embedding_out
 
     def __recurrent_step(self, embedding_out: Tensor):
+        """
+        Applies the LSTM layer plus dropout
+        """
         recurrent_out, _ = self.rnn(embedding_out)
         recurrent_out = self.dropout(recurrent_out)
 
         return recurrent_out
 
-    def __get_summary_vectors(self, recurrent_out: Tensor, x_summary_position: Tensor):
+    def __get_summary_vectors(self, recurrent_out: Tensor, x_summary_position: Tensor) -> Tensor:
+        """
+        Returns the summary vectors of a recurrent layer output, based on the specified position. For example the position
+        of the last token or the position of a target word (see also --> :func:`~utils.rnn_collate_fn`).
+
+        :param recurrent_out: output of a recurrent layer
+        :param x_summary_position: position of the token that should summarize
+        :return: a tensor that summarize the recurrent layer output
+        """
         batch_size, seq_len, hidden_size = recurrent_out.shape
 
         # flattening the recurrent output to have a long sequence of (batch_size x seq_len) vectors
