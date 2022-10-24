@@ -1,6 +1,6 @@
 # Word-in-Context (WiC) disambiguation
 
-Word-in-Context (WiC) disambiguation as a binary classification task, i.e. given two sentences we want to determine whether the indicated polysemous target words have the same meaning or not.
+In this project we address Word-in-Context (WiC) disambiguation as a binary classification task, i.e. given two sentences we want to determine whether the indicated polysemous target words have the same meaning or not.
 We experimented with a word-level approach (MLP + ReLU) and a sequence encoding one (LSTMs), both on top of GloVe static word embeddings.
 
 For further information, you can read the detailed [report](report.pdf) or take a look at the [presentation slides](presentation.pdf) (pages 2-9).
