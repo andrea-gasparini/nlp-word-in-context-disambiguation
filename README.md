@@ -1,3 +1,18 @@
+# Word-in-Context (WiC) disambiguation
+
+Word-in-Context (WiC) disambiguation as a binary classification task, i.e. given two sentences we want to determine whether the indicated polysemous target words have the same meaning or not.
+We experimented with a word-level approach (MLP + ReLU) and a sequence encoding one (LSTMs), both on top of GloVe static word embeddings.
+
+For further information, you can read the detailed [report](report.pdf) or take a look at the [presentation slides](presentation.pdf) (pages 2-9).
+
+This project has been developed during the A.Y. 2020-2021 for the [Natural Language Processing](http://naviglinlp.blogspot.com/2021/) course @ Sapienza University of Rome.
+
+## Authors
+
+- [Andrea Gasparini](https://github.com/andrea-gasparini)
+
+<!--
+
 # NLP-2021: First Homework
 This is the first homework of the NLP 2021 course at Sapienza University of Rome.
 
@@ -73,3 +88,4 @@ Actually, you can replace *data/dev.jsonl* to point to a different file, as far 
 
 If you hadn't changed *hw1/stud/model.py* yet when you run test.sh, the scores you just saw describe how a random baseline
 behaves. To have *test.sh* evaluate your model, follow the instructions in the slide.
+-->
