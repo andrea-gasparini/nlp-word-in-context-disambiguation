@@ -7,6 +7,11 @@ For further information, you can read the detailed [report](report.pdf) or take 
 
 This project has been developed during the A.Y. 2020-2021 for the [Natural Language Processing](http://naviglinlp.blogspot.com/2021/) course @ Sapienza University of Rome.
 
+## Related projects
+
+- [Word Sense Disambiguation (WSD) for WiC disambiguation](https://github.com/andrea-gasparini/nlp-word-sense-disambiguation-wic-data), experimenting with BERT feature-based and fine-tuning approaches (GlossBERT)
+- [Aspect-Based Sentiment Analysis (ABSA)](https://github.com/andrea-gasparini/nlp-aspect-based-sentiment-analysis) using different setups based on 2 stacked BiLSTMs and Attention layers; leveraging PoS, GloVe and BERT (frozen) embeddings
+
 ## Authors
 
 - [Andrea Gasparini](https://github.com/andrea-gasparini)
